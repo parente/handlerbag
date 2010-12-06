@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Handler Bag Admin</title>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/dojo/1.5/dojo/dojo.xd.js"></script>
+    <script type="text/javascript">
+    var tok;
+    function save() {
+      var cbs = dojo.query('[type="checkbox"]');
+      var status = dojo.byId('status');
+      var data = {};
+      cbs.forEach(function(item) {
+          var key = dojo.attr(item, 'id');
+          var val = dojo.attr(item, 'checked');
+          data[key] = val;
+      });
+      clearTimeout(tok);
+      status.innerHTML = 'Saving ...'
+      dojo.xhrPost({
+        url : '', 
+        headers : {'Content-Type' : 'application/json'},
+        postData : dojo.toJson(data)
+      }).then(function() {
+        status.innerHTML = 'Saved';
+        tok = setTimeout(function() { status.innerHTML = ''; }, 2000);
+      }, function() {
+        status.innerHTML = 'Failed';
+        tok = setTimeout(function() { status.innerHTML = ''; }, 2000);
+      });
+
+    }
+    function reset() {
+      window.location.reload();
+    }
+    </script>
+  </head>
+  <body>
+    <h1>Handler Bag Admin</h1>
+    <fieldset>
+      <legend>Enabled Handlers</legend>
+      {% for key, info in items %}
+      <p>
+        <input type="checkbox" id="{{ key }}" {{ 'checked' if info['enabled'] else '' }}/>
+        <label for="{{ key }}">{{ escape(key) }}</label>
+      </p>
+      {% end %}
+    </fieldset>
+    <button onclick="save();">Save</button> <button onclick="reset();">Reset</button> <span id="status"></span>
+  </body>
+</html>
