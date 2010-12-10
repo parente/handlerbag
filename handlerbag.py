@@ -14,42 +14,43 @@ import glob
 import os.path
 import shelve
 import sys
+import re
 # handlerbag
 import hbag
 
 class HandlerBag(tornado.web.Application):
     def __init__(self, **kwargs):
-        # always enabled debug for auto reload
-        kwargs['debug'] = False
+        super(HandlerBag, self).__init__([], **kwargs)
         # load the bag db
         self.db = shelve.open('hbdata')
         # import dynamic module
         self.modules = {}
-        
-        # always load the admin handler
-        import hbag.admin as admin
-        handlers = hbag.admin.get_handler_map(options.webroot)
-        self.modules['admin'] = admin
-        
+
         # store paths
         self.appPath = os.path.dirname(os.path.abspath(__file__))
         self.bagPath = os.path.dirname(hbag.__file__)
-
-        # set the initial handlers and options
-        super(HandlerBag, self).__init__(handlers, **kwargs)
+        
+        # update db to reflect available handlers
+        self.refresh_handlers_in_db()
+        
+        # load all enabled handlers
+        for name in self.db:
+            if self.db[name]['enabled'] or name == 'admin':
+                self.set_handler_status(name, True)
         
     def shutdown(self):
         # close the db cleanly
         self.db.close()
         
-    def add_dynamic_handlers(self, host, handlers, pos=0):
+    def add_dynamic_handlers(self, host_pattern, host_handlers, pos=0):
         handlers = None
         for regex, h in self.handlers:
             if regex.pattern == host_pattern:
                 handlers = h
                 break
         if handlers is None:
-            raise ValueError('cannot extend handlers for unknown host')
+            handlers = []
+            self.handlers.append((re.compile(host_pattern), handlers))
         for spec in host_handlers:
             if type(spec) is type(()):
                 assert len(spec) in (2, 3)
@@ -62,7 +63,7 @@ class HandlerBag(tornado.web.Application):
                 spec = tornado.web.URLSpec(pattern, handler, kwargs)
             handlers.insert(pos, spec)
         
-    def remove_dynamic_handler(self, host, url):
+    def remove_dynamic_handler(self, host_pattern, url):
         handlers = None
         for regex, h in self.handlers:
             if regex.pattern == host_pattern:
@@ -81,8 +82,14 @@ class HandlerBag(tornado.web.Application):
                 i += 1
     
     def refresh_handlers_in_db(self):
+        # grab packages
         g = glob.glob(os.path.join(self.bagPath, '*'))
         avail = set((os.path.basename(d) for d in g if os.path.isdir(d)))
+        # grab modules
+        g = glob.glob(os.path.join(self.bagPath, '*.py'))
+        avail.update((os.path.basename(d).split('.')[0] 
+            for d in g if not d.endswith('__init__.py')))
+        
         known = set(self.db.keys())
         new = avail - known
         for name in new:
@@ -96,15 +103,39 @@ class HandlerBag(tornado.web.Application):
         # not a known handler
         if not self.db.has_key(name): return
         info = self.db[name]
-        # no change
-        if info['enabled'] == enable: return
 
         # set the state in the db
         info = self.db[name]
         info['enabled'] = enable
         self.db[name] = info
+
+        if enable:
+            # check if module already loaded
+            try:
+                mod = self.modules[name]
+            except KeyError:
+                # load the module for the first time
+                mod = __import__('hbag.'+name, fromlist=[name])
+                self.modules[name] = mod
+            else:
+                # reload the module if loaded
+                mod = reload(mod)
+                self.modules[name] = mod
         
-        # check if module already loaded
+            # register the handlers
+            handlers = mod.get_handler_map(options.webroot)
+            self.add_dynamic_handlers('.*$', handlers)
+        else:
+            # unregister the handlers
+            try:
+                mod = self.modules[name]
+            except KeyError:
+                # nothing to do if never loaded
+                return
+            handlers = mod.get_handler_map(options.webroot)
+            for url, cls in handlers:
+                self.remove_dynamic_handler('.*$', url)
+            # keep tracking module for later reload
 
 if __name__ == '__main__':
     define('webroot', default='/', help='absolute root url of all handlers (default: /)')
