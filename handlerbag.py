@@ -63,7 +63,7 @@ class HandlerBag(tornado.web.Application):
                 spec = tornado.web.URLSpec(pattern, handler, kwargs)
             handlers.insert(pos, spec)
         
-    def remove_dynamic_handler(self, host_pattern, url):
+    def remove_dynamic_handler(self, host_pattern, url_pattern):
         handlers = None
         for regex, h in self.handlers:
             if regex.pattern == host_pattern:
@@ -91,13 +91,44 @@ class HandlerBag(tornado.web.Application):
             for d in g if not d.endswith('__init__.py')))
         
         known = set(self.db.keys())
-        new = avail - known
-        for name in new:
-            self.db[name] = {'enabled' : False, 'options' : {}}
+        for name in avail:
+            info = self.db.get(name, {})
+            mod = self.load_module(name)
+            opts = mod.get_default_options(self)
+            try:
+                desc = mod.__doc__.split('\n')[0]
+            except (AttributeError, IndexError):
+                desc = ''
+            enabled = info.get('enabled', False)
+
+            if (info is None or 
+                desc != info.get('description') or 
+                set(opts) ^ set(info.get('options', []))):
+                # put new metadata into the db
+                self.db[name] = {
+                    'enabled' : enabled,
+                    'description' : desc,
+                    'options' : opts
+                }
+
         old = known - avail
         for name in old:
             del self.db[name]
         return self.db
+        
+    def load_module(self, name):
+        # check if module already loaded
+        try:
+            mod = self.modules[name]
+        except KeyError:
+            # load the module for the first time
+            mod = __import__('hbag.'+name, fromlist=[name])
+            self.modules[name] = mod
+        else:
+            # reload the module if loaded
+            mod = reload(mod)
+            self.modules[name] = mod
+        return mod
     
     def set_handler_status(self, name, enable):
         # not a known handler
@@ -108,34 +139,27 @@ class HandlerBag(tornado.web.Application):
         info = self.db[name]
         info['enabled'] = enable
         self.db[name] = info
+        
+        # unregister existing handlers
+        try:
+            mod = self.modules[name]
+        except KeyError:
+            # nothing to do if never loaded and not enabling
+            if not enable: return
+        else:
+            handlers = mod.get_handler_map(self, options.webroot, **info['options'])
+            for bag in handlers:
+                try:
+                    self.remove_dynamic_handler('.*$', bag[0])
+                except ValueError:
+                    pass
+            # keep tracking module for later reload        
 
         if enable:
-            # check if module already loaded
-            try:
-                mod = self.modules[name]
-            except KeyError:
-                # load the module for the first time
-                mod = __import__('hbag.'+name, fromlist=[name])
-                self.modules[name] = mod
-            else:
-                # reload the module if loaded
-                mod = reload(mod)
-                self.modules[name] = mod
-        
-            # register the handlers
-            handlers = mod.get_handler_map(options.webroot)
+            # register new handler
+            mod = self.load_module(name)
+            handlers = mod.get_handler_map(self, options.webroot, **info['options'])
             self.add_dynamic_handlers('.*$', handlers)
-        else:
-            # unregister the handlers
-            try:
-                mod = self.modules[name]
-            except KeyError:
-                # nothing to do if never loaded
-                return
-            handlers = mod.get_handler_map(options.webroot)
-            for url, cls in handlers:
-                self.remove_dynamic_handler('.*$', url)
-            # keep tracking module for later reload
 
 if __name__ == '__main__':
     define('webroot', default='/', help='absolute root url of all handlers (default: /)')

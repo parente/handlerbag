@@ -42,7 +42,7 @@
       {% for key, info in items %}
       <p>
         <input type="checkbox" id="{{ key }}" {{ 'checked' if info['enabled'] else '' }}/>
-        <label for="{{ key }}">{{ escape(key) }}</label>
+        <label for="{{ key }}">{{ escape(key) }} - {{ escape(info['description']) or 'no description' }}</label>
       </p>
       {% end %}
     </fieldset>

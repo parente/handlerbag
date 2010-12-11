@@ -1,10 +1,4 @@
-'''
-
-
-:requires: Python 2.6, Tornado 1.0
-:copyright: Peter Parente 2010
-:license: BSD
-'''
+'''Simple admin panel for handler config.'''
 # tornado
 import tornado.web
 # std lib
