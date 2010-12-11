@@ -132,7 +132,7 @@ class HandlerBag(tornado.web.Application):
             self.modules[name] = mod
         return mod
     
-    def set_handler_status(self, name, enable):
+    def set_handler_status(self, name, enable, opts=None):
         # not a known handler
         if not self.db.has_key(name): return
         info = self.db[name]
@@ -140,8 +140,10 @@ class HandlerBag(tornado.web.Application):
         # set the state in the db
         info = self.db[name]
         info['enabled'] = enable
+        if opts is not None:
+            info['options'] = opts
         self.db[name] = info
-        
+
         # unregister existing handlers
         try:
             mod = self.modules[name]

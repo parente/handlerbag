@@ -23,5 +23,8 @@ class AdminHandler(tornado.web.RequestHandler):
     @users.requireRole('admin')
     def post(self, *args, **kwargs):
         obj = json.loads(self.request.body)
-        for name, enabled in obj.iteritems():
-            self.application.set_handler_status(name, enabled)
+        for name, info in obj.iteritems():
+            enabled = info['enabled']
+            options = json.loads(info['options'])
+            # @todo: keys can't be unicode, passed around as kwargs everywhere
+            self.application.set_handler_status(name, enabled, options)

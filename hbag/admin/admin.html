@@ -3,18 +3,28 @@
   <head>
     <meta charset="utf-8" />
     <title>Handler Bag Admin</title>
+    <style type="text/css">
+    textarea { margin-left: 2.25em; width: 90%; height: 50px;}
+    </style>
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/dojo/1.5/dojo/dojo.xd.js"></script>
     <script type="text/javascript">
     var tok;
     function save() {
       var cbs = dojo.query('[type="checkbox"]');
+      var txts = dojo.query('textarea');
       var status = dojo.byId('status');
       var data = {};
       cbs.forEach(function(item) {
-          var key = dojo.attr(item, 'id');
-          var val = dojo.attr(item, 'checked');
-          data[key] = val;
+          var key = dojo.attr(item, 'name');
+          var enabled = dojo.attr(item, 'checked');
+          data[key] = {enabled : enabled};
       });
+      txts.forEach(function(item) {
+          var key = dojo.attr(item, 'name');
+          var options = dojo.attr(item, 'value');
+          data[key].options = options;
+      });
+      console.log(data);
       clearTimeout(tok);
       status.innerHTML = 'Saving ...'
       dojo.xhrPost({
@@ -36,13 +46,14 @@
     </script>
   </head>
   <body>
-    <h1>Handler Bag Admin</h1>
+    <h1>handlerbag</h1>
     <fieldset>
-      <legend>Enabled Handlers</legend>
+      <legend>Available Handlers</legend>
       {% for key, info in items %}
       <p>
-        <input type="checkbox" id="{{ key }}" {{ 'checked' if info['enabled'] else '' }}/>
-        <label for="{{ key }}">{{ escape(key) }} - {{ escape(info['description']) or 'no description' }}</label>
+        <input type="checkbox" id="{{ key }}" name="{{ key }}" {{ 'checked' if info['enabled'] else '' }}/>
+        <label for="{{ key }}">{{ escape(key) }} - {{ escape(info['description']) or 'no description' }}</label><br />
+        <textarea id="{{ key }}_options" name="{{ key }}">{{ json_encode(info['options']) }}</textarea>
       </p>
       {% end %}
     </fieldset>
