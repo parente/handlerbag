@@ -17,10 +17,12 @@ import sys
 import re
 # handlerbag
 import hbag
+import login
+import uuid
 
 class HandlerBag(tornado.web.Application):
-    def __init__(self, **kwargs):
-        super(HandlerBag, self).__init__([], **kwargs)
+    def __init__(self, handlers=[], **kwargs):
+        super(HandlerBag, self).__init__(handlers, **kwargs)
         # load the bag db
         self.db = shelve.open('hbdata')
         # import dynamic module
@@ -164,9 +166,19 @@ class HandlerBag(tornado.web.Application):
 if __name__ == '__main__':
     define('webroot', default='/', help='absolute root url of all handlers (default: /)')
     define('port', default=5000, type=int, help='drop server port (default: 5000)')
+    define('debug', default=False, type=bool, help='enable debug autoreload (default: false)')
     tornado.options.parse_command_line()
 
-    application = HandlerBag()
+    settings = {
+        'login_url' : '/login',
+        'auth_cookie' : 'handlerbag.user',
+        'cookie_secret' : uuid.uuid4().hex,
+        'debug' : options.debug
+    }
+    handlers = [
+        ('/login/?', login.GoogleHandler)
+    ]
+    application = HandlerBag(handlers, **settings)
     http_server = tornado.httpserver.HTTPServer(application)
     http_server.listen(options.port)
     ioloop = tornado.ioloop.IOLoop.instance()

@@ -1,6 +1,6 @@
-===========
-Handler Bag
-===========
+==========
+handlerbag
+==========
 
 :Author: Peter Parente
 :Description: A little layer on top of the Tornado web server to manage a bag of dynamic handlers.
