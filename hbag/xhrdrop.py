@@ -6,7 +6,13 @@ import os.path
 import datetime
 import urlparse
 
-class DropHandler(tornado.web.StaticFileHandler):
+class XHRDropHandler(tornado.web.StaticFileHandler):
+    def __init__(self, application, request, path, default_filename=None, **kwargs):
+        '''Override to accept additional kwargs.'''
+        tornado.web.RequestHandler.__init__(self, application, request, **kwargs)
+        self.root = os.path.abspath(path) + os.path.sep
+        self.default_filename = default_filename
+    
     def initialize(self, **options):
         self.options = options
     
@@ -32,12 +38,12 @@ class DropHandler(tornado.web.StaticFileHandler):
     def get(self, *args, **kwargs):
         if not self.options['get_enabled']:
             raise tornado.web.HTTPError(405)
-        super(DropHandler, self).get(*args, **kwargs)
+        super(XHRDropHandler, self).get(*args, **kwargs)
 
 def get_handler_map(app, webroot, **options):
     tmp = {'path' : os.path.join(app.bagPath, 'xhrdrop')}
     tmp.update(options)
-    return [(webroot+'xhrdrop//?(.*)', DropHandler, tmp)]
+    return [(webroot+'xhrdrop/?(.*)', XHRDropHandler, tmp)]
 
 def get_default_options(app):
     return {'get_enabled' : False}
