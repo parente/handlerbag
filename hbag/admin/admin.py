@@ -26,5 +26,9 @@ class AdminHandler(tornado.web.RequestHandler):
         for name, info in obj.iteritems():
             enabled = info['enabled']
             options = json.loads(info['options'])
+            optionsEnc = {}
+            for key, value in options.iteritems():
+                # encode keys to avoid problems passing by kwarg
+                optionsEnc[key.encode('utf-8')] = value
             # @todo: keys can't be unicode, passed around as kwargs everywhere
-            self.application.set_handler_status(name, enabled, options)
+            self.application.set_handler_status(name, enabled, optionsEnc)
