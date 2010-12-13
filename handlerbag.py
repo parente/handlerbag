@@ -31,6 +31,7 @@ class HandlerBag(tornado.web.Application):
         # store paths
         self.appPath = os.path.dirname(os.path.abspath(__file__))
         self.bagPath = os.path.dirname(hbag.__file__)
+        self.dataPath = os.path.join(self.appPath, 'data')
         
         # update db to reflect available handlers
         self.refresh_handlers_in_db()
@@ -169,12 +170,13 @@ if __name__ == '__main__':
     define('webroot', default='/', help='absolute root url of all handlers (default: /)')
     define('port', default=5000, type=int, help='drop server port (default: 5000)')
     define('debug', default=False, type=bool, help='enable debug autoreload (default: false)')
+    define('cookie', default=uuid.uuid4().hex, help='secret key cookie signing (default: random)')
     tornado.options.parse_command_line()
 
     settings = {
         'login_url' : '/login',
         'auth_cookie' : 'handlerbag.user',
-        'cookie_secret' : uuid.uuid4().hex,
+        'cookie_secret' : str(options.cookie),
         'debug' : options.debug
     }
     handlers = [

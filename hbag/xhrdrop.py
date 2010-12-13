@@ -41,9 +41,10 @@ class XHRDropHandler(tornado.web.StaticFileHandler):
         super(XHRDropHandler, self).get(*args, **kwargs)
 
 def get_handler_map(app, webroot, **options):
-    tmp = {'path' : os.path.join(app.bagPath, 'xhrdrop')}
-    tmp.update(options)
-    return [(webroot+'xhrdrop/?(.*)', XHRDropHandler, tmp)]
+    return [(webroot+'xhrdrop/?(.*)', XHRDropHandler, options)]
 
 def get_default_options(app):
-    return {'get_enabled' : False}
+    return {
+        'get_enabled' : False, 
+        'path' : os.path.join(app.dataPath, 'xhrdrop')
+    }

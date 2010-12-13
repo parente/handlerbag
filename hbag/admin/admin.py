@@ -30,5 +30,10 @@ class AdminHandler(tornado.web.RequestHandler):
             for key, value in options.iteritems():
                 # encode keys to avoid problems passing by kwarg
                 optionsEnc[key.encode('utf-8')] = value
-            # @todo: keys can't be unicode, passed around as kwargs everywhere
             self.application.set_handler_status(name, enabled, optionsEnc)
+
+def get_handler_map(app, webroot, **options):
+    return [(webroot+'admin/?', AdminHandler)]
+
+def get_default_options(app):
+    return {}
