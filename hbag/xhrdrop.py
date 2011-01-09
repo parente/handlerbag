@@ -40,7 +40,7 @@ class XHRDropHandler(tornado.web.StaticFileHandler):
             raise tornado.web.HTTPError(405)
         super(XHRDropHandler, self).get(*args, **kwargs)
 
-def get_handler_map(app, webroot, **options):
+def get_handler_map(app, webroot, options):
     return [(webroot+'xhrdrop/?(.*)', XHRDropHandler, options)]
 
 def get_default_options(app):

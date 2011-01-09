@@ -32,7 +32,7 @@ class AdminHandler(tornado.web.RequestHandler):
                 optionsEnc[key.encode('utf-8')] = value
             self.application.set_handler_status(name, enabled, optionsEnc)
 
-def get_handler_map(app, webroot, **options):
+def get_handler_map(app, webroot, options):
     return [(webroot+'admin/?', AdminHandler)]
 
 def get_default_options(app):

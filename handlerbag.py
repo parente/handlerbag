@@ -45,7 +45,7 @@ class HandlerBag(tornado.web.Application):
         # close the db cleanly
         self.db.close()
         
-    def add_dynamic_handlers(self, host_pattern, host_handlers, pos=0):
+    def add_dynamic_handlers(self, host_pattern, host_handlers, options):
         handlers = None
         for regex, h in self.handlers:
             if regex.pattern == host_pattern:
@@ -64,23 +64,33 @@ class HandlerBag(tornado.web.Application):
                 else:
                     kwargs = {}
                 spec = tornado.web.URLSpec(pattern, handler, kwargs)
-            handlers.insert(pos, spec)
+            handlers.append(spec)
+            try:
+                mtd = handler.register
+            except AttributeError:
+                return
+            mtd(**options)
         
     def remove_dynamic_handler(self, host_pattern, url_pattern):
         handlers = None
         for regex, h in self.handlers:
             if regex.pattern == host_pattern:
-                handlers = h
+                specs = h
                 break
-        if handlers is None:
+        if specs is None:
             raise ValueError('cannot remove handler for unknown host')
         i = 0
         if not url_pattern.endswith('$'):
             url_pattern += '$'
-        while i < len(handlers):
-            handler = handlers[i]
-            if handler.regex.pattern == url_pattern:
-                handlers.pop(i)
+        while i < len(specs):
+            spec = specs[i]
+            if spec.regex.pattern == url_pattern:
+                specs.pop(i)
+                try:
+                    mtd = spec.handler_class.unregister
+                except AttributeError:
+                    continue
+                mtd()
             else:
                 i += 1
     
@@ -152,7 +162,7 @@ class HandlerBag(tornado.web.Application):
             # nothing to do if never loaded and not enabling
             if not enable: return
         else:
-            handlers = mod.get_handler_map(self, options.webroot, **info['options'])
+            handlers = mod.get_handler_map(self, options.webroot, info['options'])
             for bag in handlers:
                 try:
                     self.remove_dynamic_handler('.*$', bag[0])
@@ -161,14 +171,15 @@ class HandlerBag(tornado.web.Application):
             # keep tracking module for later reload        
 
         if enable:
+            opts = info['options']
             # register new handler
             mod = self.load_module(name)
-            handlers = mod.get_handler_map(self, options.webroot, **info['options'])
-            self.add_dynamic_handlers('.*$', handlers)
+            handlers = mod.get_handler_map(self, options.webroot, opts)
+            self.add_dynamic_handlers('.*$', handlers, opts)
 
 if __name__ == '__main__':
     define('webroot', default='/', help='absolute root url of all handlers (default: /)')
-    define('port', default=5000, type=int, help='drop server port (default: 5000)')
+    define('port', default=5000, type=int, help='server port (default: 5000)')
     define('debug', default=False, type=bool, help='enable debug autoreload (default: false)')
     define('cookie', default=uuid.uuid4().hex, help='secret key cookie signing (default: random)')
     tornado.options.parse_command_line()

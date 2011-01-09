@@ -47,7 +47,7 @@ class URLFetchHandler(tornado.web.RequestHandler):
             result = str(resp.error)            
         self.render('urlfetch.html', result=result)
 
-def get_handler_map(app, webroot, **options):
+def get_handler_map(app, webroot, options):
     return [(webroot+'urlfetch/?', URLFetchHandler, options)]
 
 def get_default_options(app):

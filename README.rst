@@ -18,7 +18,6 @@ Run handlerbag.py --help on the server for options.
 License
 =======
 
-Copyright (c) 2010, Peter Parente All Rights Reserved.
-All rights reserved.
+Copyright (c) 2010, 2011 Peter Parente. All Rights Reserved.
 
 http://creativecommons.org/licenses/BSD/
