@@ -9,11 +9,20 @@ import os.path
 import datetime
 import urlparse
 import subprocess
+import glob
+import time
 
 class PageWatcher(PatternMatchingEventHandler):
+    def __init__(self, options={}, **kwargs):
+        super(PageWatcher, self).__init__(**kwargs)
+        self.options = options
+    
     def _render(self, path):
         root, ext = os.path.splitext(path)
-        args = ['rst2html-pygments', path, root + '.html']
+        opts = self.options.get('writer_opts')
+        args = ['rst2html-pygments']
+        if opts: args.extend(opts)
+        args.extend([path, root + '.html'])
         subprocess.call(args)
 
     def _remove(self, path):
@@ -41,23 +50,33 @@ class RstPagesHandler(tornado.web.StaticFileHandler):
     @classmethod
     def register(cls, path='.', **options):
         ob = cls.observer = PollingObserver()
-        w = PageWatcher(patterns=['*.rst'])
+        w = PageWatcher(patterns=['*.rst'], options=options)
+        # render existing documents
+        for fn in glob.glob(os.path.join(path, '*.rst')):
+            root, ext = os.path.splitext(fn)
+            html = root+'.html'
+            if not os.path.isfile(html):
+                w._render(html)
         # crash if unicode
         path = path.encode('utf-8')
         ob.schedule(w, path)
         ob.start()
-    
+
     @classmethod
     def unregister(cls):
         cls.observer.stop()
         cls.observer.join()
+        
+    def initialize(self, writer_opts, **kwargs):
+        super(RstPagesHandler, self).initialize(**kwargs)
     
     def get(self, fn, *args, **kwargs):
-        print fn, args, kwargs
         if not fn:
             # generate index
-            print 'here'
-            pass
+            docs = [(os.path.basename(fn), time.ctime(os.stat(fn).st_mtime))
+                for fn in glob.glob(os.path.join(self.root, '*.html'))]
+            docs.sort()
+            self.render('rstpages.html', docs=docs)
         else:
             super(RstPagesHandler, self).get(fn, *args, **kwargs)
 
@@ -66,5 +85,13 @@ def get_handler_map(app, webroot, options):
 
 def get_default_options(app):
     return {
-        'path' : os.path.join(app.dataPath, 'rstpages')
+        'path' : os.path.join(app.dataPath, 'rstpages'),
+        'writer_opts' : [
+            '--stylesheet-path='+os.path.join(app.bagPath, 'rstpages', 'lsr.css'),
+            '--strip-comments',
+            '--generator',
+            '--field-name-limit=20',
+            '--date',
+            '--time'
+        ]
     }
