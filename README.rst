@@ -8,7 +8,8 @@ handlerbag
 Requirements
 ============
 
-* A server that can run Tornado web server
+* `Tornado <http://github..com/facebook/tornado>`_
+* `watchdog <http://github.com/gorakhargosh/watchdog>`_
 
 Use
 ===

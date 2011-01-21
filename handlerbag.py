@@ -1,9 +1,7 @@
 '''
 Server that can load Python modules defining handlers mapped to URLs. 
 
-:requires: Python 2.6, Tornado 1.0
-:copyright: Peter Parente 2010
-:license: BSD
+Copyright (c) 2010, 2011 Peter Parente. All Rights Reserved.
 '''
 # tornado
 import tornado.web

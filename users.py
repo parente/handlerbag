@@ -1,3 +1,8 @@
+'''
+Allowed users and their roles.
+
+Copyright (c) 2010, 2011 Peter Parente. All Rights Reserved.
+'''
 # tornado
 import tornado.web
 
