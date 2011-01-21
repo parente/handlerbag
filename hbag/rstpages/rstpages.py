@@ -57,8 +57,6 @@ class RstPagesHandler(tornado.web.StaticFileHandler):
             html = root+'.html'
             if not os.path.isfile(html):
                 w._render(html)
-        # crash if unicode
-        path = path.encode('utf-8')
         ob.schedule(w, path)
         ob.start()
 
