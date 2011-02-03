@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <title>Handler Bag Admin</title>
     <style type="text/css">
-    textarea { margin-left: 2.25em; width: 90%; height: 50px;}
+    textarea { margin-left: 2.25em; width: 90%; height: 100px;}
     </style>
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/dojo/1.5/dojo/dojo.xd.js"></script>
     <script type="text/javascript">
@@ -24,7 +24,6 @@
           var options = dojo.attr(item, 'value');
           data[key].options = options;
       });
-      console.log(data);
       clearTimeout(tok);
       status.innerHTML = 'Saving ...'
       dojo.xhrPost({
@@ -53,7 +52,7 @@
       <p>
         <input type="checkbox" id="{{ key }}" name="{{ key }}" {{ 'checked' if info['enabled'] else '' }}/>
         <label for="{{ key }}">{{ escape(key) }} - {{ escape(info['description']) or 'no description' }}</label><br />
-        <textarea id="{{ key }}_options" name="{{ key }}">{{ json_encode(info['options']) }}</textarea>
+        <textarea id="{{ key }}_options" name="{{ key }}">{{ json.dumps(info['options'], sort_keys=True, indent=2) }}</textarea>
       </p>
       {% end %}
     </fieldset>

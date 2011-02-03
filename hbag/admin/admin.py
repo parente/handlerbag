@@ -17,7 +17,7 @@ class AdminHandler(tornado.web.RequestHandler):
         db = self.application.refresh_handlers_in_db()
         # show all handlers but ourselves
         items = (item for item in db.iteritems() if item[0] != 'admin')
-        self.render('admin.html', items=items)
+        self.render('admin.html', items=items, json=json)
 
     @tornado.web.authenticated
     @users.requireRole('admin')
