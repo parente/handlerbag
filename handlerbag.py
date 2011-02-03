@@ -13,6 +13,7 @@ import os.path
 import shelve
 import sys
 import re
+import logging
 # handlerbag
 import hbag
 import login
@@ -105,6 +106,12 @@ class HandlerBag(tornado.web.Application):
         for name in avail:
             info = self.db.get(name, {})
             mod = self.load_module(name)
+            if not mod:
+                try:
+                    del self.db[name]
+                except KeyError:
+                    pass
+                continue
             opts = mod.get_default_options(self)
             try:
                 desc = mod.__doc__.split('\n')[0]
@@ -133,11 +140,21 @@ class HandlerBag(tornado.web.Application):
             mod = self.modules[name]
         except KeyError:
             # load the module for the first time
-            mod = __import__('hbag.'+name, fromlist=[name])
+            try:
+                mod = __import__('hbag.'+name, fromlist=[name])
+            except Exception:
+                # bad module, log and bail
+                logging.exception('failed to load %s', name)
+                return
             self.modules[name] = mod
         else:
             # reload the module if loaded
-            mod = reload(mod)
+            try:
+                mod = reload(mod)
+            except Exception:
+                # bad module, log and bail
+                logging.exception('failed to load %s', name)
+                return
             self.modules[name] = mod
         return mod
     
@@ -172,8 +189,14 @@ class HandlerBag(tornado.web.Application):
             opts = info['options']
             # register new handler
             mod = self.load_module(name)
-            handlers = mod.get_handler_map(self, options.webroot, opts)
-            self.add_dynamic_handlers('.*$', handlers, opts)
+            if mod:
+                handlers = mod.get_handler_map(self, options.webroot, opts)
+                self.add_dynamic_handlers('.*$', handlers, opts)
+            else:
+                try:
+                    del self.db[name]
+                except KeyError:
+                    pass
 
 if __name__ == '__main__':
     define('webroot', default='/', help='absolute root url of all handlers (default: /)')
