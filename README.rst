@@ -9,12 +9,16 @@ Requirements
 ============
 
 * `Tornado <http://github..com/facebook/tornado>`_
-* `watchdog <http://github.com/gorakhargosh/watchdog>`_
+* `watchdog <http://github.com/gorakhargosh/watchdog>`_ (for the rstpages handler)
 
 Use
 ===
 
-Run handlerbag.py --help on the server for options.
+#. Edit users.py and make yourself an admin
+#. Run handlerbag.py
+#. Visit http://localhost:5000/admin
+
+Run handlerbag.py --help on the server for options like choosing a port.
 
 License
 =======
