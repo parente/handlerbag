@@ -218,6 +218,7 @@ if __name__ == '__main__':
     http_server = tornado.httpserver.HTTPServer(application)
     http_server.listen(options.port)
     ioloop = tornado.ioloop.IOLoop.instance()
+    logging.info('started on port: %d', options.port)
     try:
         ioloop.start()
     finally:
