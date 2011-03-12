@@ -160,6 +160,7 @@ class HandlerBag(tornado.web.Application):
     
     def set_handler_status(self, name, enable, opts=None):
         # not a known handler
+        name = name.encode('utf-8')
         if not self.db.has_key(name): return
         info = self.db[name]
 
