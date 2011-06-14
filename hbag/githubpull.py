@@ -21,7 +21,7 @@ class GitHubPullHandler(tornado.web.RequestHandler):
         url = repo['url'].replace('https', 'git')+'.git'
         # get the name of the project
         name = repo['name']
-        branch = branch if branch else 'master'
+        branch = branch.strip('/') if branch else 'master'
         
         projectsPath = self.options['projects_path']
         clonePath = os.path.join(projectsPath, name)
